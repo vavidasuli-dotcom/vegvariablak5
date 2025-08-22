@@ -1,0 +1,26 @@
+name: vegvari_ablak
+description: Végvári Ablak – offline MVP (felmérés, státuszok+pénzügy, naptár drag&drop, napi munka, bevásárló lista, statisztika, engedélyek)
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  collection: ^1.18.0
+  signature: ^5.5.0
+  file_picker: ^8.0.6
+  pdf: ^3.11.0
+  printing: ^5.13.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
