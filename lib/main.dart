@@ -1,9 +1,5 @@
 // lib/main.dart
 // Végvári Ablak – offline MVP (2025-08-22)
-// Fókusz: a megbeszélt funkciók működjenek offline: felmérés + tételek + PDF (rajzokkal),
-// mentett felmérések státuszokkal + pénzügy, naptár (drag&drop), napi munka (drag & drop csapatokba),
-// bevásárló lista (archív 30 nap), ügyfelek, jogosultság alapú menü, statisztika.
-// Megjegyzés: egyszerű in-memory tár, app bezárásakor törlődik (MVP).
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -195,10 +191,10 @@ class MeasurementItem {
   final WindowOpen? windowOpen; // ablak
   final Layer? layer; // ajtó+ablak
   final Panel? panel; // ajtó
-  final bool motoros; // redőny típusoknál (Alu/Vakolható/Felső szekrény) – itt csak flag
-  final String? motorType; // Távos/Kapcsolós/Aksis
+  final bool motoros; // redőny opcióknál
+  final String? motorType; // Távirányítós/Kapcsolós/Akkumulátoros
   final Uint8List? sketchPng; // rajz
-  final bool sorolt; // sorolt szerkezet kapcsoló
+  final bool sorolt; // sorolt szerkezet
   final int soroltCount; // max 5
 
   MeasurementItem({
@@ -285,7 +281,7 @@ class JobItem {
   String title; // Ügyfél – rövid
   String address;
   String desc;
-  DateTime? start; // null = időpont nélküli (Napi munka gyors munka)
+  DateTime? start; // null = időpont nélküli
   String? team; // 'A' / 'B'
   JobItem({required this.id, required this.title, required this.address, required this.desc, this.start, this.team});
 }
@@ -373,7 +369,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // FIGYELEM: első két paraméter POZICIONÁLIS!
   void setSurveyStatus(Survey s, SurveyStatus status, {int? revenue, int? expense, required String by}) {
     s.status = status;
     final now = DateTime.now();
@@ -428,7 +423,6 @@ class AppState extends ChangeNotifier {
   }
 
   void uncheckShoppingItem(ShoppingItem it, String by) {
-    // visszaállítás meta log
     it.checkedBy = 'Visszaállította: $by';
     it.checkedAt = null;
     notifyListeners();
@@ -440,14 +434,13 @@ class AppState extends ChangeNotifier {
   }
 
   void _purgeShoppingArchive() {
-    // 30 napnál régebbi archivált tételek törlése
     final now = DateTime.now();
     shopping.removeWhere((it) => it.checkedAt != null && now.difference(it.checkedAt!).inDays >= 30);
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Root + Főmenü (fix sorrend, jogosultság-szűrés), jobb felső profil/bejelentkezés
+// Root + Főmenü + profil/bejelentkezés
 // ─────────────────────────────────────────────────────────────────────────────
 
 class RootScreen extends StatefulWidget {
@@ -651,7 +644,7 @@ class _NewSurveyDraftScreenState extends State<NewSurveyDraftScreen> {
             const SizedBox(height: 12),
             TextFormField(controller: _phone, decoration: const InputDecoration(labelText: 'Telefon'), keyboardType: TextInputType.phone),
             const SizedBox(height: 12),
-            TextFormField(controller: _surveyor, decoration: const InputDecoration(labelText: 'Felmérő neve'),),
+            TextFormField(controller: _surveyor, decoration: const InputDecoration(labelText: 'Felmérő neve')),
             const SizedBox(height: 12),
             TextFormField(controller: _note, decoration: const InputDecoration(labelText: 'Megjegyzés'), maxLines: 3),
             const SizedBox(height: 20),
@@ -813,10 +806,8 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
     if (st == SurveyStatus.completed) {
       final res = await showDialog<(int,int)?>(context: context, builder: (_)=> const _RevenueExpenseDialog());
       if (res == null) return;
-      // ← JAVÍTVA: pozicionális 2. paraméter
       AppState.I.setSurveyStatus(s, st, revenue: res.$1, expense: res.$2, by: Session.I.userName ?? 'Ismeretlen');
     } else {
-      // ← JAVÍTVA: pozicionális 2. paraméter
       AppState.I.setSurveyStatus(s, st, by: Session.I.userName ?? 'Ismeretlen');
     }
   }
@@ -926,7 +917,7 @@ class _RevenueExpenseDialogState extends State<_RevenueExpenseDialog> {
   }
 }
 
-// Tétel hozzáadása – dinamikus űrlap rövid jelölésekkel
+// Tétel hozzáadása – dinamikus űrlap
 class AddItemScreen extends StatefulWidget {
   final Survey survey;
   const AddItemScreen({super.key, required this.survey});
@@ -974,7 +965,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // típus választó
             _Dropdown<ItemType>(
               label: 'Típus',
               value: type,
@@ -992,7 +982,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             const SizedBox(height: 12),
             _Dropdown<String>(label: 'Szín', value: color, items: kColors.map((c)=>DropdownMenuItem(value:c, child: Text(c))).toList(), onChanged: (v)=> setState(()=> color = v ?? color)),
             const SizedBox(height: 12),
-            if (isDoor || isWindow || isShade) _JBSelector(value: dir, onChanged: (v)=> setState(()=> dir = v)), // J/B mindenütt ahol értelmezett
+            if (isDoor || isWindow || isShade) _JBSelector(value: dir, onChanged: (v)=> setState(()=> dir = v)),
             if (isWindow) ...[
               const SizedBox(height: 12),
               _WindowOpenSelector(value: wopen, onChanged: (v)=> setState(()=> wopen = v)),
@@ -1017,7 +1007,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
             ],
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(child: TextFormField(controller: _qty, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Darabszám'),)),
+              Expanded(child: TextFormField(controller: _qty, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Darabszám'))),
               const SizedBox(width: 12),
               Expanded(child: SwitchListTile(value: sorolt, onChanged: (v)=> setState(()=> sorolt = v), title: const Text('Sorolt szerkezet'))),
             ]),
@@ -1200,7 +1190,7 @@ class MentettFelmeresekScreen extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Árajánlatok – placeholder (a PDF export külön készül az ajánlatokhoz később)
+// Árajánlatok – placeholder
 // ─────────────────────────────────────────────────────────────────────────────
 
 class ArajanlatokScreen extends StatelessWidget {
@@ -1246,7 +1236,7 @@ class _UgyfelekScreenState extends State<UgyfelekScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Naptár – heti, 30 perces slotok, drag&drop csak jogosultaknak
+// Naptár – heti, 30 perces slotok, drag&drop
 // ─────────────────────────────────────────────────────────────────────────────
 
 class NaptarScreen extends StatefulWidget {
@@ -1313,7 +1303,7 @@ class _CalendarCell extends StatelessWidget {
 
     Widget content = Stack(children: [
       for (final job in jobsHere)
-        Positioned(fill: true, child: Padding(
+        Positioned.fill(child: Padding(
           padding: const EdgeInsets.all(4.0),
           child: Session.I.perms.canMoveCalendar
               ? LongPressDraggable<JobItem>(
@@ -1494,7 +1484,7 @@ class _TeamBucket extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bevásárló lista – mappák (csak név), tételek, archív 30 nap, visszaállítás/törlés
+// Bevásárló lista
 // ─────────────────────────────────────────────────────────────────────────────
 
 class BevasarloListaScreen extends StatefulWidget {
@@ -1615,7 +1605,7 @@ class _ShoppingFolderScreenState extends State<ShoppingFolderScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Statisztika – bevétel/kiadás időszakokra
+// Statisztika
 // ─────────────────────────────────────────────────────────────────────────────
 
 class StatisztikaScreen extends StatefulWidget {
@@ -1721,7 +1711,7 @@ class _SummaryCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Engedélyek – admin beállíthatja felhasználónként a menük és jogok láthatóságát
+// Engedélyek
 // ─────────────────────────────────────────────────────────────────────────────
 
 class EngedelyekScreen extends StatefulWidget {
