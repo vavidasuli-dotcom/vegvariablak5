@@ -1,4 +1,3 @@
-
 // lib/main.dart
 // Végvári Ablak – offline MVP (2025-08-22)
 // Fókusz: a megbeszélt funkciók működjenek offline: felmérés + tételek + PDF (rajzokkal),
@@ -374,6 +373,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // FIGYELEM: első két paraméter POZICIONÁLIS!
   void setSurveyStatus(Survey s, SurveyStatus status, {int? revenue, int? expense, required String by}) {
     s.status = status;
     final now = DateTime.now();
@@ -697,11 +697,7 @@ class _SurveysListScreenState extends State<SurveysListScreen> {
             child: Row(children: [
               Expanded(child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Keresés név/cím szerint'), onChanged: (v)=>setState(()=>q=v))),
               const SizedBox(width: 8),
-              DropdownButton<SurveyStatus?>(
-                value: filter,
-                items: [null, ...SurveyStatus.values].map((f)=>DropdownMenuItem(value:f, child: Text(f?.name ?? 'Mind'))).toList(),
-                onChanged: (v)=>setState(()=>filter=v),
-              )
+              DropdownButton<SurveyStatus?>(value: filter, items: [null, ...SurveyStatus.values].map((f)=>DropdownMenuItem(value:f, child: Text(f?.name ?? 'Mind'))).toList(), onChanged: (v)=>setState(()=>filter=v)),
             ]),
           ),
           Expanded(
@@ -817,9 +813,11 @@ class _SurveyDetailScreenState extends State<SurveyDetailScreen> {
     if (st == SurveyStatus.completed) {
       final res = await showDialog<(int,int)?>(context: context, builder: (_)=> const _RevenueExpenseDialog());
       if (res == null) return;
-      AppState.I.setSurveyStatus(s, status: st, revenue: res.$1, expense: res.$2, by: Session.I.userName ?? 'Ismeretlen');
+      // ← JAVÍTVA: pozicionális 2. paraméter
+      AppState.I.setSurveyStatus(s, st, revenue: res.$1, expense: res.$2, by: Session.I.userName ?? 'Ismeretlen');
     } else {
-      AppState.I.setSurveyStatus(s, status: st, by: Session.I.userName ?? 'Ismeretlen');
+      // ← JAVÍTVA: pozicionális 2. paraméter
+      AppState.I.setSurveyStatus(s, st, by: Session.I.userName ?? 'Ismeretlen');
     }
   }
 
@@ -1315,7 +1313,7 @@ class _CalendarCell extends StatelessWidget {
 
     Widget content = Stack(children: [
       for (final job in jobsHere)
-        Positioned.fill(child: Padding(
+        Positioned(fill: true, child: Padding(
           padding: const EdgeInsets.all(4.0),
           child: Session.I.perms.canMoveCalendar
               ? LongPressDraggable<JobItem>(
@@ -1702,7 +1700,7 @@ class _StatisztikaScreenState extends State<StatisztikaScreen> {
             ...list.map((e)=> ListTile(
               leading: const Icon(Icons.monetization_on_outlined),
               title: Text('${e.date.toLocal()}  •  Bev: ${_fmtFt(e.revenue)}  •  Ki: ${_fmtFt(e.expense)}'),
-              subtitle: Text('Felmerés ID: ${e.surveyId}  •  Rögzítette: ${e.setBy}'),
+              subtitle: Text('Felmérés ID: ${e.surveyId}  •  Rögzítette: ${e.setBy}'),
             ))
           ])),
         ],
